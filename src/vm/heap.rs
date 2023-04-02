@@ -1,5 +1,6 @@
 use crate::serde::BytewiseSerialized;
 use crate::types::Str;
+use std::any::type_name;
 use std::any::Any;
 
 pub trait HeapPushable {}
@@ -14,14 +15,14 @@ impl BytewiseSerialized for HeapObjectID {}
 pub struct Heap(Vec<Box<dyn Any>>);
 
 impl Heap {
-    pub fn push<T: HeapPushable + 'static>(&mut self, object: T) -> HeapObjectID {
+    pub fn push<T: HeapPushable + Any>(&mut self, object: T) -> HeapObjectID {
         self.0.push(Box::new(object));
         HeapObjectID(self.0.len() - 1)
     }
 
     pub fn get<T: HeapPushable + Any>(&self, id: HeapObjectID) -> &T {
         let Some(res) = self.0[id.0].downcast_ref() else {
-            panic!("expected heap object to be {}", std::any::type_name::<T>());
+            panic!("expected heap object to be {}", type_name::<T>());
         };
 
         res
