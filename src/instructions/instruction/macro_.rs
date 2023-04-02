@@ -24,7 +24,7 @@ macro_rules! instruction {
         @serialize_match [$($serialize_match:tt)*]
         @serialized_len_match [$($serialized_len_match:tt)*]
         @out [$out:ident]
-        @self [$self:ident]
+        @deserialize_arg [$deserialize_arg:ident]
         @deserialize_match [$($deserialize_match:tt)*]
 
         $Name:ident
@@ -99,7 +99,7 @@ macro_rules! instruction {
                 },
             ]
             @out [$out]
-            @self [$self]
+            @deserialize_arg [$deserialize_arg]
             @deserialize_match [
                 $($deserialize_match)*
                 #[allow(unused)]
@@ -107,7 +107,7 @@ macro_rules! instruction {
                     let mut offset = std::mem::size_of::<$crate::instructions::InstructionID>();
 
                     $( $(
-                        let $bytes_arg: $BytesArg = ($self[offset..]).deserialize();
+                        let $bytes_arg: $BytesArg = $crate::serde::BytesDeserialize::deserialize(&$deserialize_arg[offset..]);
                         offset += $crate::serde::Serialize::serialized_len(&$bytes_arg);
                     )+ )?
 
@@ -127,7 +127,7 @@ macro_rules! instruction {
         @serialize_match [$($serialize_match:tt)*]
         @serialized_len_match [$($serialized_len_match:tt)*]
         @out [$out:ident]
-        @self [$self:ident]
+        @deserialize_arg [$deserialize_arg:ident]
         @deserialize_match [$($deserialize_match:tt)*]
     ) => {
         #[allow(unused)]
@@ -159,11 +159,17 @@ macro_rules! instruction {
                     $($serialized_len_match)*
                 }
             }
+
+            fn serialize(&self) -> Vec<u8> {
+                let mut res = Vec::default();
+                self.extend_serialized(&mut res);
+                res
+            }
         }
 
-        impl $crate::serde::Deserialize<Instruction> for [u8] {
-            fn deserialize(&$self) -> Instruction {
-                match $crate::serde::Deserialize::<$crate::instructions::InstructionID>::deserialize($self) {
+        impl $crate::serde::Deserialize for Instruction {
+            fn deserialize($deserialize_arg: &[u8]) -> Instruction {
+                match $crate::instructions::InstructionID::deserialize($deserialize_arg) {
                     $($deserialize_match)*
                     _ => panic!("invalid instruction code"),
                 }
@@ -179,7 +185,7 @@ macro_rules! instruction {
         @serialize_match [$($serialize_match:tt)*]
         @serialized_len_match [$($serialized_len_match:tt)*]
         @out [$out:ident]
-        @self [$self:ident]
+        @deserialize_arg [$deserialize_arg:ident]
         @deserialize_match [$($deserialize_match:tt)*]
 
         $($xs:tt)*
@@ -198,7 +204,7 @@ macro_rules! instruction {
             @serialize_match []
             @serialized_len_match []
             @out [out]
-            @self [self]
+            @deserialize_arg [value]
             @deserialize_match []
 
             $($xs)*
