@@ -1,6 +1,10 @@
-use super::HeapObjectID;
-use crate::types::Bool;
-use crate::types::Int;
+use crate::serde::BytewiseSerialized;
+use crate::serde::Deserialize;
+use crate::serde::Serialize;
+use std::mem::size_of;
+
+#[derive(Default)]
+pub struct Stack(Vec<u8>);
 
 pub trait StackTrait<T> {
     fn push(&mut self, value: T);
@@ -8,35 +12,20 @@ pub trait StackTrait<T> {
     fn last(&self) -> T;
 }
 
-macro_rules! stack {
-    (
-        $($Name:ident),* $(,)?
-    ) => {
-        ::paste::paste! {
-            #[derive(Debug, Default)]
-            pub struct Stack {
-                $(
-                    [<$Name:snake>]: Vec<$Name>,
-                )*
-            }
+impl<T: BytewiseSerialized> StackTrait<T> for Stack {
+    fn push(&mut self, value: T) {
+        value.extend_serialized(&mut self.0);
+    }
 
-            $(
-                impl StackTrait<$Name> for Stack {
-                    fn push(&mut self, value: $Name) {
-                        self.[<$Name:snake>].push(value);
-                    }
+    fn pop(&mut self) -> T {
+        let res = self.last();
+        let len = size_of::<T>();
+        self.0.truncate(self.0.len() - len);
+        res
+    }
 
-                    fn pop(&mut self) -> $Name {
-                        self.[<$Name:snake>].pop().unwrap()
-                    }
-
-                    fn last(&self) -> $Name {
-                        *self.[<$Name:snake>].last().unwrap()
-                    }
-                }
-            )*
-        }
-    };
+    fn last(&self) -> T {
+        let len = size_of::<T>();
+        self.0[self.0.len() - len..].deserialize()
+    }
 }
-
-stack!(Int, Bool, HeapObjectID);

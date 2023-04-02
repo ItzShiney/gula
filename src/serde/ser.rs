@@ -28,6 +28,7 @@ impl BytewiseSerialized for u128 {}
 impl BytewiseSerialized for usize {}
 impl BytewiseSerialized for f32 {}
 impl BytewiseSerialized for f64 {}
+impl BytewiseSerialized for bool {}
 
 impl<T: BytewiseSerialized> Serialize for T {
     fn extend_serialized(&self, out: &mut Vec<u8>) {
