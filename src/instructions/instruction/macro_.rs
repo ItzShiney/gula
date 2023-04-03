@@ -10,7 +10,7 @@ macro_rules! __reverse_statements {
             $($others;)*
         }
 
-        $first
+        $first;
     };
 }
 
@@ -19,9 +19,7 @@ macro_rules! instruction {
     (
         @discriminant [$discriminant:expr]
         @enum_cases [$($enum_cases:tt)*]
-        @eval [$($eval:tt)*]
-            @eval_instructions [$eval_instructions:ident]
-            @eval_vm [$eval_vm:ident]
+        @instructions [$($output_instructions:tt)*]
         @discriminant_match [$($discriminant_match:tt)*]
         @serialize_match [$($serialize_match:tt)*]
         @serialized_len_match [$($serialized_len_match:tt)*]
@@ -34,9 +32,11 @@ macro_rules! instruction {
                 (
                     $($bytes_arg:ident : $BytesArg:ty),+ $(,)?
                 )
-            )? $(|
-                $($pop_arg:ident : $PopArg:ty),* $(,)?
-            |)?
+            )? = |$instructions:ident, $vm:ident $(
+                -> (
+                    $($pop_arg:ident : $PopArg:ty),* $(,)?
+                )
+            )?|
         $body:block
 
         $($xs:tt)*
@@ -50,23 +50,22 @@ macro_rules! instruction {
 
                 $Name $( ($($BytesArg),+) )? = [<$Name:snake:upper>],
             ]
-            @eval [
-                $($eval)*
-                [<$Name:snake:upper>] => {
+            @instructions [
+                $($output_instructions)*
+                |$instructions: &mut $crate::instructions::Instructions, $vm: &mut $crate::vm::VM| -> isize {
                     #[allow(unused_mut)]
                     let mut skip = 0_isize;
 
                     $($(
-                        let $bytes_arg = $eval_instructions.read::<$BytesArg>();
+                        let $bytes_arg = $instructions.read::<$BytesArg>();
                         skip += std::mem::size_of::<$BytesArg>() as isize;
                     )+)?
 
-                    #[allow(unused)]
                     use $crate::vm::StackTrait;
                     $(
                         $crate::__reverse_statements! {
                             $(
-                                let $pop_arg: $PopArg = $eval_vm.stack.pop();
+                                let $pop_arg: $PopArg = $vm.stack.pop();
                             )*
                         }
                     )?
@@ -76,8 +75,6 @@ macro_rules! instruction {
                     skip
                 },
             ]
-                @eval_instructions [$eval_instructions]
-                @eval_vm [$eval_vm]
             @discriminant_match [
                 $($discriminant_match)*
                 #[allow(unused)] Self::$Name $( ($($bytes_arg),*) )? => [<$Name:snake:upper>],
@@ -125,9 +122,7 @@ macro_rules! instruction {
     (
         @discriminant [$discriminant:expr]
         @enum_cases [$($enum_cases:tt)*]
-        @eval [$($eval:tt)*]
-            @eval_instructions [$eval_instructions:ident]
-            @eval_vm [$eval_vm:ident]
+        @instructions [$($output_instructions:tt)*]
         @discriminant_match [$($discriminant_match:tt)*]
         @serialize_match [$($serialize_match:tt)*]
         @serialized_len_match [$($serialized_len_match:tt)*]
@@ -135,19 +130,15 @@ macro_rules! instruction {
         @deserialize_arg [$deserialize_arg:ident]
         @deserialize_match [$($deserialize_match:tt)*]
     ) => {
+        #[allow(unused)]
+        pub const INSTRUCTIONS: &[fn(&mut $crate::instructions::Instructions, &mut $crate::VM) -> isize] = &[
+            $($output_instructions)*
+        ];
+
         #[derive(Debug, Clone, Copy)]
         #[repr(u8)]
         pub enum Instruction {
             $($enum_cases)*
-        }
-
-        impl Instruction {
-            pub fn eval(instruction_id: $crate::instructions::InstructionID, $eval_instructions: &mut $crate::instructions::Instructions, $eval_vm: &mut $crate::vm::VM) -> isize {
-                match instruction_id {
-                    $($eval)*
-                    _ => unreachable!(),
-                }
-            }
         }
 
         impl crate::serde::Serialize for Instruction {
@@ -189,9 +180,7 @@ macro_rules! instruction {
     (
         @discriminant [$discriminant:expr]
         @enum_cases [$($enum_cases:tt)*]
-        @eval [$($eval:tt)*]
-            @eval_instructions [$eval_instructions:ident]
-            @eval_vm [$eval_vm:ident]
+        @instructions [$($output_instructions:tt)*]
         @discriminant_match [$($discriminant_match:tt)*]
         @serialize_match [$($serialize_match:tt)*]
         @serialized_len_match [$($serialized_len_match:tt)*]
@@ -205,16 +194,12 @@ macro_rules! instruction {
     };
 
     (
-        $instructions:ident, $vm:ident:
-
         $($xs:tt)*
     ) => {
         $crate::instruction! {
             @discriminant [0]
             @enum_cases []
-            @eval []
-                @eval_instructions [$instructions]
-                @eval_vm [$vm]
+            @instructions []
             @discriminant_match []
             @serialize_match []
             @serialized_len_match []

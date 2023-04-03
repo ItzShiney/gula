@@ -104,7 +104,7 @@ impl Instructions {
         let instruction_id: InstructionID = self.as_slice().deserialize();
         self.pos += size_of::<InstructionID>();
 
-        let skip = Instruction::eval(instruction_id, self, vm);
+        let skip = INSTRUCTIONS[instruction_id as usize](self, vm);
         self.pos = self.pos.checked_add_signed(skip).unwrap();
     }
 }

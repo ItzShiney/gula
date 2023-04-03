@@ -96,20 +96,24 @@ impl_ne_serde!(f32);
 impl_ne_serde!(f64);
 
 impl Serialize for bool {
+    #[inline(always)]
     fn extend_serialized(&self, out: &mut Vec<u8>) {
         out.push(*self as u8);
     }
 
+    #[inline(always)]
     fn serialized_len(&self) -> usize {
         1
     }
 
+    #[inline(always)]
     fn serialize(&self) -> Vec<u8> {
         vec![*self as u8]
     }
 }
 
 impl Deserialize for bool {
+    #[inline(always)]
     fn deserialize(bytes: &[u8]) -> Self {
         bytes[0] != 0
     }
