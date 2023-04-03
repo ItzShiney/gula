@@ -7,7 +7,15 @@ macro_rules! impl_ne_serde {
         impl $crate::serde::Serialize for $T {
             #[inline(always)]
             fn extend_serialized(&self, out: &mut Vec<u8>) {
-                out.extend(self.to_ne_bytes());
+                // As far as I know, this is not an UB
+                // For some reason `self.to_ne_bytes()` executes several times slower
+                let ne_bytes = unsafe {
+                    std::slice::from_raw_parts(
+                        self as *const _ as *const u8,
+                        std::mem::size_of::<$T>(),
+                    )
+                };
+                out.extend(ne_bytes);
             }
 
             #[inline(always)]
@@ -17,7 +25,15 @@ macro_rules! impl_ne_serde {
 
             #[inline(always)]
             fn serialize(&self) -> Vec<u8> {
-                self.to_ne_bytes().into()
+                // As far as I know, this is not an UB
+                // For some reason `self.to_ne_bytes()` executes several times slower
+                let ne_bytes = unsafe {
+                    std::slice::from_raw_parts(
+                        self as *const _ as *const u8,
+                        std::mem::size_of::<$T>(),
+                    )
+                };
+                ne_bytes.into()
             }
         }
 
