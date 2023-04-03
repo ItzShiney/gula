@@ -1,15 +1,13 @@
-use crate::serde::BytewiseSerialized;
+mod id;
+
 use crate::types::Str;
+pub use id::*;
 use std::any::type_name;
 use std::any::Any;
 
 pub trait HeapPushable {}
 
 impl HeapPushable for Str {}
-
-#[derive(Debug, Clone, Copy)]
-pub struct HeapObjectID(usize);
-impl BytewiseSerialized for HeapObjectID {}
 
 #[derive(Default)]
 pub struct Heap(Vec<Box<dyn Any>>);

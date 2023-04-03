@@ -1,4 +1,4 @@
-use crate::serde::BytewiseSerialized;
+use crate::serde::BytesDeserialize;
 use crate::serde::Deserialize;
 use crate::serde::Serialize;
 use std::mem::size_of;
@@ -12,11 +12,13 @@ pub trait StackTrait<T> {
     fn last(&self) -> T;
 }
 
-impl<T: BytewiseSerialized> StackTrait<T> for Stack {
+impl<T: Serialize + Deserialize> StackTrait<T> for Stack {
+    #[inline(always)]
     fn push(&mut self, value: T) {
         value.extend_serialized(&mut self.0);
     }
 
+    #[inline(always)]
     fn pop(&mut self) -> T {
         let res = self.last();
         let len = size_of::<T>();
@@ -24,6 +26,7 @@ impl<T: BytewiseSerialized> StackTrait<T> for Stack {
         res
     }
 
+    #[inline(always)]
     fn last(&self) -> T {
         let len = size_of::<T>();
         self.0[self.0.len() - len..].deserialize()

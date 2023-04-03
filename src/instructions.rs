@@ -3,8 +3,8 @@ mod instruction;
 use crate::serde::*;
 use crate::vm::VM;
 pub use instruction::*;
+use std::fmt;
 use std::fmt::Debug;
-use std::fmt::{self};
 use std::mem::size_of;
 
 pub struct Instructions {
@@ -77,7 +77,7 @@ impl Instructions {
         &self.bytes[self.pos..]
     }
 
-    pub fn read<T: BytewiseSerialized>(&mut self) -> T {
+    pub fn read<T: Deserialize>(&mut self) -> T {
         self.as_slice().deserialize()
     }
 
@@ -104,7 +104,7 @@ impl Instructions {
         let instruction_id: InstructionID = self.as_slice().deserialize();
         self.pos += size_of::<InstructionID>();
 
-        let skip = INSTRUCTIONS[instruction_id as usize](self, vm);
+        let skip = Instruction::eval(instruction_id, self, vm);
         self.pos = self.pos.checked_add_signed(skip).unwrap();
     }
 }
