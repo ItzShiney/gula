@@ -1,14 +1,6 @@
-#![allow(clippy::uninlined_format_args)]
-#![feature(downcast_unchecked)]
-pub mod instructions;
-pub mod serde;
-pub mod types;
-pub mod vm;
-
-use crate::instructions::Instruction;
-use crate::instructions::Instructions;
-use std::time::Instant;
-use vm::VM;
+use gula::instructions::Instruction;
+use gula::instructions::Instructions;
+use gula::vm::VM;
 
 fn main() {
     let mut vm = VM::default();
@@ -60,13 +52,11 @@ fn main() {
         IntAdd,
 
         IntDup,
-        IntPush(10_000_000),
+        IntPush(100),
         IntLe,
 
         JumpIf(-(3 + 2 + 2 + 9 * 3)),
     ]);
 
-    let instant = Instant::now();
     instructions.eval(&mut vm);
-    println!("{:?}", instant.elapsed());
 }
