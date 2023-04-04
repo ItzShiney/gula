@@ -15,7 +15,7 @@ macro_rules! impl_ne_serde {
                         std::mem::size_of::<$T>(),
                     )
                 };
-                out.extend(ne_bytes);
+                out.extend_from_slice(ne_bytes);
             }
 
             #[inline(always)]
@@ -40,11 +40,13 @@ macro_rules! impl_ne_serde {
         impl $crate::serde::Deserialize for $T {
             #[inline(always)]
             fn deserialize(bytes: &[u8]) -> $T {
-                let bytes = bytes[0..std::mem::size_of::<$T>()].try_into().expect(concat!(
-                    "expected size_of<",
-                    stringify!($T),
-                    ">() bytes for `from_ne_bytes`"
-                ));
+                let bytes = unsafe { bytes.get_unchecked(0..std::mem::size_of::<$T>()) }
+                    .try_into()
+                    .expect(concat!(
+                        "expected size_of<",
+                        stringify!($T),
+                        ">() bytes for `from_ne_bytes`"
+                    ));
                 <$T>::from_ne_bytes(bytes)
             }
         }
@@ -115,6 +117,6 @@ impl Serialize for bool {
 impl Deserialize for bool {
     #[inline(always)]
     fn deserialize(bytes: &[u8]) -> Self {
-        bytes[0] != 0
+        unsafe { *bytes.get_unchecked(0) != 0 }
     }
 }

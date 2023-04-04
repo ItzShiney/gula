@@ -73,38 +73,41 @@ impl From<Vec<Instruction>> for Instructions {
 }
 
 impl Instructions {
+    #[inline]
     pub fn as_slice(&self) -> &[u8] {
-        &self.bytes[self.pos..]
+        unsafe { &self.bytes.get_unchecked(self.pos..) }
     }
 
-    pub fn read<T: Deserialize>(&mut self) -> T {
-        self.as_slice().deserialize()
+    #[inline]
+    pub fn read<T: Serialize + Deserialize>(&mut self) -> T {
+        let res: T = self.as_slice().deserialize();
+        self.pos += res.serialized_len();
+        res
     }
 
+    #[inline]
     pub fn jump(&mut self, bytes_offset: isize) {
-        self.pos = self
-            .pos
-            .checked_add_signed(bytes_offset)
-            .expect("jumped backwards out of instructions");
+        self.pos = self.pos.overflowing_add_signed(bytes_offset).0;
     }
 
+    #[inline]
     pub fn end(&mut self) {
         self.bytes.clear();
         self.pos = 0;
     }
 
+    #[inline]
     pub fn eval(&mut self, vm: &mut VM) {
         while !self.as_slice().is_empty() {
-            // println!("{:?}", self);
             self.eval_next(vm);
         }
     }
 
+    #[inline]
     pub fn eval_next(&mut self, vm: &mut VM) {
         let instruction_id: InstructionID = self.as_slice().deserialize();
         self.pos += size_of::<InstructionID>();
 
-        let skip = INSTRUCTIONS[instruction_id as usize](self, vm);
-        self.pos = self.pos.checked_add_signed(skip).unwrap();
+        Instruction::eval(instruction_id, self, vm);
     }
 }

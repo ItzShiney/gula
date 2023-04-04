@@ -6,7 +6,7 @@ use crate::types::Int;
 use crate::types::Str;
 use crate::vm::HeapObjectID;
 
-pub type InstructionID = u8;
+pub type InstructionID = u16;
 
 instruction! {
     IntPush(value: Int) = |instructions, vm| {

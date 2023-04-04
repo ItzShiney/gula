@@ -52,13 +52,11 @@ macro_rules! instruction {
             ]
             @instructions [
                 $($output_instructions)*
-                |$instructions: &mut $crate::instructions::Instructions, $vm: &mut $crate::vm::VM| -> isize {
-                    #[allow(unused_mut)]
-                    let mut skip = 0_isize;
 
+                #[inline(always)]
+                |$instructions: &mut $crate::instructions::Instructions, $vm: &mut $crate::vm::VM| {
                     $($(
                         let $bytes_arg = $instructions.read::<$BytesArg>();
-                        skip += std::mem::size_of::<$BytesArg>() as isize;
                     )+)?
 
                     use $crate::vm::StackTrait;
@@ -71,8 +69,6 @@ macro_rules! instruction {
                     )?
 
                     $body
-
-                    skip
                 },
             ]
             @discriminant_match [
@@ -130,15 +126,24 @@ macro_rules! instruction {
         @deserialize_arg [$deserialize_arg:ident]
         @deserialize_match [$($deserialize_match:tt)*]
     ) => {
-        #[allow(unused)]
-        pub const INSTRUCTIONS: &[fn(&mut $crate::instructions::Instructions, &mut $crate::VM) -> isize] = &[
-            $($output_instructions)*
-        ];
-
         #[derive(Debug, Clone, Copy)]
-        #[repr(u8)]
+        #[repr(u16)]
         pub enum Instruction {
             $($enum_cases)*
+        }
+
+        impl Instruction {
+            #[inline(always)]
+            pub fn eval(instruction_id: $crate::instructions::InstructionID, instructions: &mut $crate::instructions::Instructions, vm: &mut $crate::vm::VM) {
+                #[allow(unused)]
+                const INSTRUCTIONS: &[fn(&mut $crate::instructions::Instructions, &mut $crate::VM)] = &[
+                    $($output_instructions)*
+                ];
+
+                unsafe {
+                    INSTRUCTIONS.get_unchecked(instruction_id as usize)(instructions, vm);
+                }
+            }
         }
 
         impl crate::serde::Serialize for Instruction {

@@ -2,7 +2,6 @@ mod id;
 
 use crate::types::Str;
 pub use id::*;
-use std::any::type_name;
 use std::any::Any;
 
 pub trait HeapPushable {}
@@ -19,10 +18,6 @@ impl Heap {
     }
 
     pub fn get<T: HeapPushable + Any>(&self, id: HeapObjectID) -> &T {
-        let Some(res) = self.0[id.0].downcast_ref() else {
-            panic!("expected heap object to be {}", type_name::<T>());
-        };
-
-        res
+        unsafe { self.0.get_unchecked(id.0).downcast_ref_unchecked() }
     }
 }
