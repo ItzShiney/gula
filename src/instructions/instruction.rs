@@ -5,74 +5,77 @@ use crate::types::Bool;
 use crate::types::Int;
 use crate::types::Str;
 use crate::vm::HeapObjectID;
-
-pub type InstructionID = u16;
+use crate::vm::StackTrait;
 
 instruction! {
-    IntPush(value: Int) = |instructions, vm| {
+    instructions, vm:
+
+    IntPush(value: Int) = {
         vm.stack.push(value);
     }
 
-    IntPop = |instructions, vm -> (value: Int)| {}
+    IntPop = |_value: Int| {}
 
-    IntDup = |instructions, vm| {
+    IntDup = {
         let value: Int = vm.stack.last();
         vm.stack.push(value);
     }
 
-    IntAdd = |instructions, vm -> (a: Int, b: Int)| {
+    IntAdd = |a: Int, b: Int| {
         vm.stack.push(a + b);
     }
 
-    IntSub = |instructions, vm -> (a: Int, b: Int)| {
+    IntSub = |a: Int, b: Int| {
         vm.stack.push(a - b);
     }
 
-    IntMod = |instructions, vm -> (a: Int, b: Int)| {
+    IntMod = |a: Int, b: Int| {
         vm.stack.push(a % b);
     }
 
-    IntEq = |instructions, vm -> (a: Int, b: Int)| {
+    IntEq = |a: Int, b: Int| {
         vm.stack.push(a == b);
     }
 
-    IntLe = |instructions, vm -> (a: Int, b: Int)| {
+    IntLe = |a: Int, b: Int| {
         vm.stack.push(a <= b);
     }
 
-    IntPrint = |instructions, vm -> (value: Int)| {
-        // println!("{}", value);
+    IntPrint = |value: Int| {
+        #[allow(unused)] let value = value;
+
+        #[cfg(feature = "io")]
+        println!("{}", value);
     }
 
-    HeapObjectIDPush(value: HeapObjectID) = |instructions, vm| {
+    HeapObjectIDPush(value: HeapObjectID) = {
         vm.stack.push(value);
     }
 
-    StrPrint = |instructions, vm -> (value: HeapObjectID)| {
-        let value = vm.heap.get::<Str>(value);
-        // println!("{}", value);
+    StrPrint = |value: HeapObjectID| {
+        #[allow(unused)] let value = vm.heap.get::<Str>(value);
+
+        #[cfg(feature = "io")]
+        println!("{}", value);
     }
 
-    Jump(instructions_skipped: isize) = |instructions, stack| {
-        /// Instruction::from(Vec<Instruction>) modifies this instruction for `instructions_skipped` to be a valid byte offset
+    Jump(instructions_skipped: isize) = {
         instructions.jump(instructions_skipped);
     }
 
-    JumpUnless(instructions_skipped: isize) = |instructions, stack -> (condition: Bool)| {
-        /// Instruction::from(Vec<Instruction>) modifies this instruction for `instructions_skipped` to be a valid byte offset
+    JumpUnless(instructions_skipped: isize) = |condition: Bool| {
         if !condition {
             instructions.jump(instructions_skipped);
         }
     }
 
-    JumpIf(instructions_skipped: isize) = |instructions, stack -> (condition: Bool)| {
-        /// Instruction::from(Vec<Instruction>) modifies this instruction for `instructions_skipped` to be a valid byte offset
+    JumpIf(instructions_skipped: isize) = |condition: Bool| {
         if condition {
             instructions.jump(instructions_skipped);
         }
     }
 
-    Out = |instructions, stack| {
+    Out = {
         instructions.end();
     }
 }

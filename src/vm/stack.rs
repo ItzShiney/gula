@@ -3,7 +3,7 @@ use crate::serde::Deserialize;
 use crate::serde::Serialize;
 use std::mem::size_of;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Stack(Vec<u8>);
 
 pub trait StackTrait<T> {

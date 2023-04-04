@@ -2,16 +2,17 @@ use super::Deserialize;
 use super::Serialize;
 
 #[macro_export]
-macro_rules! impl_ne_serde {
+macro_rules! impl_bytes_serde {
     ($T:ty) => {
-        impl $crate::serde::Serialize for $T {
+        impl $crate::serde::Serialize for $T
+        where
+            $T: Copy,
+        {
             #[inline(always)]
             fn extend_serialized(&self, out: &mut Vec<u8>) {
-                // As far as I know, this is not an UB
-                // For some reason `self.to_ne_bytes()` executes several times slower
                 let ne_bytes = unsafe {
                     std::slice::from_raw_parts(
-                        self as *const _ as *const u8,
+                        self as *const $T as *const u8,
                         std::mem::size_of::<$T>(),
                     )
                 };
@@ -25,8 +26,6 @@ macro_rules! impl_ne_serde {
 
             #[inline(always)]
             fn serialize(&self) -> Vec<u8> {
-                // As far as I know, this is not an UB
-                // For some reason `self.to_ne_bytes()` executes several times slower
                 let ne_bytes = unsafe {
                     std::slice::from_raw_parts(
                         self as *const _ as *const u8,
@@ -40,14 +39,15 @@ macro_rules! impl_ne_serde {
         impl $crate::serde::Deserialize for $T {
             #[inline(always)]
             fn deserialize(bytes: &[u8]) -> $T {
-                let bytes = unsafe { bytes.get_unchecked(0..std::mem::size_of::<$T>()) }
+                unsafe { std::ptr::read_unaligned(bytes.as_ptr() as *const $T) }
+                /* let bytes = unsafe { bytes.get_unchecked(0..std::mem::size_of::<$T>()) }
                     .try_into()
                     .expect(concat!(
                         "expected size_of<",
                         stringify!($T),
                         ">() bytes for `from_ne_bytes`"
                     ));
-                <$T>::from_ne_bytes(bytes)
+                <$T>::from_ne_bytes(bytes) */
             }
         }
     };
@@ -82,20 +82,20 @@ macro_rules! impl_0_serde {
     };
 }
 
-impl_ne_serde!(i8);
-impl_ne_serde!(i16);
-impl_ne_serde!(i32);
-impl_ne_serde!(i64);
-impl_ne_serde!(i128);
-impl_ne_serde!(isize);
-impl_ne_serde!(u8);
-impl_ne_serde!(u16);
-impl_ne_serde!(u32);
-impl_ne_serde!(u64);
-impl_ne_serde!(u128);
-impl_ne_serde!(usize);
-impl_ne_serde!(f32);
-impl_ne_serde!(f64);
+impl_bytes_serde!(i8);
+impl_bytes_serde!(i16);
+impl_bytes_serde!(i32);
+impl_bytes_serde!(i64);
+impl_bytes_serde!(i128);
+impl_bytes_serde!(isize);
+impl_bytes_serde!(u8);
+impl_bytes_serde!(u16);
+impl_bytes_serde!(u32);
+impl_bytes_serde!(u64);
+impl_bytes_serde!(u128);
+impl_bytes_serde!(usize);
+impl_bytes_serde!(f32);
+impl_bytes_serde!(f64);
 
 impl Serialize for bool {
     #[inline(always)]
