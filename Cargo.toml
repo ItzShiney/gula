@@ -17,12 +17,14 @@ opt-level = 3
 debug-assertions = false
 overflow-checks = false
 debug = 2
+lto = true
 
 [profile.release]
 opt-level = 3
 debug-assertions = false
 overflow-checks = false
 debug = 2
+lto = true
 
 [dependencies]
 paste = "1.0.11"
