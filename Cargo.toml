@@ -7,8 +7,10 @@ edition = "2021"
 crate-type = ["lib"]
 
 [features]
-default = ["io"]
 io = []
+default = [
+    # "io",
+]
 
 [profile.dev]
 opt-level = 3

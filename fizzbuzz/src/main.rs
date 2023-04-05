@@ -1,6 +1,7 @@
 use gula::instructions::Instruction;
 use gula::instructions::Instructions;
 use gula::vm::VM;
+use std::time::Instant;
 
 fn main() {
     let mut vm = VM::default();
@@ -52,11 +53,13 @@ fn main() {
         IntAdd,
 
         IntDup,
-        IntPush(100),
+        IntPush(10_000_000),
         IntLe,
 
         JumpIf(-(3 + 2 + 2 + 9 * 3)),
     ]);
 
+    let instant = Instant::now();
     instructions.eval(&mut vm);
+    println!("{:?}", instant.elapsed());
 }
